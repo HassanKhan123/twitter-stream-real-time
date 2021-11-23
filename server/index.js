@@ -13,7 +13,7 @@ const streamURL =
 
 const rules = [
   {
-    value: 'giveaway',
+    value: 'bitcoin',
   },
 ];
 
