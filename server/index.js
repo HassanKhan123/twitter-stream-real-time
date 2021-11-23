@@ -40,11 +40,33 @@ const setRules = async () => {
   return response.body;
 };
 
+// delete stream rules
+const deleteRules = async rules => {
+  if (!Array.isArray(rules.data)) return null;
+
+  const ids = rules.data.map(rule => rule.id);
+
+  const data = {
+    delete: {
+      ids,
+    },
+  };
+  const response = await needle('post', rulesURL, data, {
+    headers: {
+      Authorization: `Bearer ${TOKEN}`,
+      'content-type': 'application/json',
+    },
+  });
+
+  return response.body;
+};
+
 (async () => {
   let currentRules;
   try {
-    await setRules();
     currentRules = await getRules();
+    await deleteRules(currentRules);
+    await setRules();
   } catch (error) {
     console.log('ERRPR===', error);
     process.exit(1);
