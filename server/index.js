@@ -1,3 +1,7 @@
+const http = require('http');
+const path = require('path');
+const express = require('express');
+const socketIo = require('socket.io');
 const needle = require('needle');
 const config = require('dotenv').config();
 
@@ -12,6 +16,17 @@ const rules = [
     value: 'giveaway',
   },
 ];
+
+const PORT = process.env.PORT || 3000;
+
+const app = express();
+
+const server = http.createServer(app);
+const io = socketIo(server);
+
+app.get('/', (req, res) => {
+  res.sendFile(path.resolve(__dirname, '../', 'client', 'index.html'));
+});
 
 // get stream rules
 const getRules = async () => {
@@ -60,7 +75,7 @@ const deleteRules = async rules => {
   return response.body;
 };
 
-const streamTweets = async () => {
+const streamTweets = async socket => {
   const stream = needle.get(streamURL, {
     headers: {
       Authorization: `Bearer ${TOKEN}`,
@@ -70,12 +85,15 @@ const streamTweets = async () => {
   stream.on('data', data => {
     try {
       const json = JSON.parse(data);
-      console.log(json);
+      // console.log(json);
+      socket.emit('tweet', json);
     } catch (error) {}
   });
 };
 
-(async () => {
+io.on('connection', async () => {
+  console.log('client connected');
+
   let currentRules;
   try {
     currentRules = await getRules();
@@ -86,5 +104,23 @@ const streamTweets = async () => {
     process.exit(1);
   }
 
-  streamTweets();
-})();
+  streamTweets(io);
+});
+
+server.listen(PORT, () => {
+  console.log('LISTENING!!');
+});
+
+// (async () => {
+//   let currentRules;
+//   try {
+//     currentRules = await getRules();
+//     await deleteRules(currentRules);
+//     await setRules();
+//   } catch (error) {
+//     console.log('ERRPR===', error);
+//     process.exit(1);
+//   }
+
+//   streamTweets();
+// })();
